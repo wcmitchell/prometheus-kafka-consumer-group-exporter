@@ -3,6 +3,7 @@ import javaproperties
 import logging
 import signal
 import sys
+import os
 
 from jog import JogFormatter
 from kafka import KafkaConsumer
@@ -100,7 +101,12 @@ def main():
         'consumer_timeout_ms': 500
     }
 
-    for filename in args.consumer_config:
+    if os.getenv('CONSUMER_CONFIG'):
+        param_config = [os.getenv('CONSUMER_CONFIG')]
+    else:
+        param_config = args.consumer_config
+
+    for filename in param_config:
         with open(filename) as f:
             raw_config = javaproperties.load(f)
             converted_config = {k.replace('.', '_'): v for k, v in raw_config.items()}
@@ -150,7 +156,7 @@ def main():
                 commit_timestamps = collectors.get_commit_timestamps()
                 exporter_offsets = collectors.get_exporter_offsets()
 
-                # Commits store the offset a consumer should read from next, 
+                # Commits store the offset a consumer should read from next,
                 # so we need to add one to the current offset for semantic parity
                 exporter_partition = message.partition
                 exporter_offset = message.offset + 1
